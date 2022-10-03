@@ -1,7 +1,9 @@
 import 'package:isar/isar.dart';
 
 import 'category.dart';
+
 part 'routine.g.dart';
+
 @Collection()
 class Routine {
   @Id()
@@ -10,7 +12,7 @@ class Routine {
   late String title;
 
   @Index()
-  late DateTime startTime;
+  late String startTime;
 
   @Index(caseSensitive: false)
   late String day;

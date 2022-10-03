@@ -2,17 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_isar_db/collecdtions/routine.dart';
 import 'package:isar/isar.dart';
 
-import '../collecdtions/category.dart';
 
-class CreateRoutine extends StatefulWidget {
+import '../collecdtions/category.dart';
+import '../main.dart';
+
+class UpdateRoutine extends StatefulWidget {
   final Isar isar;
-  const CreateRoutine({Key? key, required this.isar}) : super(key: key);
+  final Routine routine;
+  const UpdateRoutine({Key? key, required this.isar, required this.routine})
+      : super(key: key);
 
   @override
-  State<CreateRoutine> createState() => _CreateRoutineState();
+  State<UpdateRoutine> createState() => _UpdateRoutineState();
 }
 
-class _CreateRoutineState extends State<CreateRoutine> {
+class _UpdateRoutineState extends State<UpdateRoutine> {
   List<Category>? categories;
   Category? dropdownValue;
   final TextEditingController _titleController = TextEditingController();
@@ -34,14 +38,45 @@ class _CreateRoutineState extends State<CreateRoutine> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    _readCategory();
+    _setRoutineInfor();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xffffffff),
-      appBar: AppBar(title: const Text("Create routine")),
+      appBar: AppBar(
+        title: const Text("Update routine"),
+        actions: [
+          IconButton(
+              onPressed: () {
+                showDialog(
+                    context: context,
+                    builder: (BuildContext context) => AlertDialog(
+                      title: const Text('Delete Routine'),
+                      content: const Text(
+                          'Are you sure you want to delete this routine?'),
+                      actions: [
+                        ElevatedButton(
+                            onPressed: () {
+                              deleteRoutine();
+                            },
+                            child: const Text(
+                              "Yes",
+                            )),
+                        TextButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                            },
+                            child: const Text(
+                              "No",
+                            ))
+                      ],
+                    ));
+              },
+              icon: const Icon(Icons.delete))
+        ],
+      ),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(8.0),
@@ -150,9 +185,9 @@ class _CreateRoutineState extends State<CreateRoutine> {
                 alignment: Alignment.center,
                 child: ElevatedButton(
                     onPressed: () {
-                      addRoutine();
+                      updateRoutine();
                     },
-                    child: const Text("Add")))
+                    child: const Text("Update")))
           ]),
         ),
       ),
@@ -197,24 +232,45 @@ class _CreateRoutineState extends State<CreateRoutine> {
     });
   }
 
-  addRoutine() async {
+  _setRoutineInfor() async {
+    await _readCategory();
+    _titleController.text = widget.routine.title;
+    _timeController.text = widget.routine.startTime;
+    dropdownDay = widget.routine.day;
+    await widget.routine.category.load();
+    print(widget.routine.category.load());
+    print(widget.routine.category.value?.id);
+    int? getId = widget.routine.category.value?.id;
+    setState(() {
+      dropdownValue = categories?[getId! - 1];
+    });
+  }
+
+  updateRoutine() async {
     final routineCollection = widget.isar.routines;
-    final newRoutine = Routine()
-      ..title = _titleController.text
-      ..startTime = _timeController.text
-      ..day = dropdownDay
-      ..category.value = dropdownValue;
+    await widget.isar.writeTxn((isar) async {
+      final routine = await routineCollection.get(widget.routine.id);
+
+      routine!
+        ..title = _titleController.text
+        ..startTime = _timeController.text
+        ..day = dropdownDay
+        ..category.value = dropdownValue;
+
+      await routineCollection.put(routine);
+
+      Navigator.pop(context);
+    });
+  }
+
+  deleteRoutine() async {
+    final routineCollection = widget.isar.routines;
 
     await widget.isar.writeTxn((isar) async {
-      await routineCollection.put(newRoutine);
-      await newRoutine.category.save();
+      routineCollection.delete(widget.routine.id);
     });
 
-    _titleController.clear();
-    _timeController.clear();
-    setState(() {
-      dropdownDay = "monday";
-      dropdownValue = null;
-    });
+    Navigator.push(context,
+        MaterialPageRoute(builder: (context) => MyApp(isar: widget.isar)));
   }
 }
