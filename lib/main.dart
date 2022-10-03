@@ -6,6 +6,7 @@ import 'collecdtions/category.dart';
 import 'collecdtions/routine.dart';
 
 void main() async{
+  WidgetsFlutterBinding.ensureInitialized();
   final dir = await getApplicationSupportDirectory();
   final isar = await Isar.open(
       schemas: [RoutineSchema, CategorySchema], directory: dir.path);
