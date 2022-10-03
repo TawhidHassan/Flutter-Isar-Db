@@ -11,11 +11,12 @@ void main() async{
   final dir = await getApplicationSupportDirectory();
   final isar = await Isar.open(
       schemas: [RoutineSchema, CategorySchema], directory: dir.path);
-  runApp(const MyApp());
+  runApp( MyApp(isar: isar,));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  final Isar isar;
+  const MyApp({Key? key, required this.isar}) : super(key: key);
 
   // This widget is the root of your application.
   @override
@@ -26,7 +27,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const MainPage(),
+      home:  MainPage(isar:isar ,),
     );
   }
 }

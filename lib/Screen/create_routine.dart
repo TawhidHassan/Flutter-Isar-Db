@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_isar_db/collecdtions/category.dart';
+import 'package:isar/isar.dart';
 
 class CreateRoutine extends StatefulWidget {
-  const CreateRoutine({Key? key}) : super(key: key);
+  final Isar isar;
+  const CreateRoutine({Key? key, required this.isar}) : super(key: key);
 
   @override
   State<CreateRoutine> createState() => _CreateRoutineState();
@@ -72,8 +75,12 @@ class _CreateRoutineState extends State<CreateRoutine> {
                                 controller: _newCatController),
                             actions: [
                               ElevatedButton(
-                                  onPressed: () {},
-                                  child: const Text("Add"))
+                                  onPressed: () {
+                                    if (_newCatController.text.isNotEmpty) {
+                                      _addCategory(widget.isar);
+                                    }
+                                  },
+                                  child: const Text("Add CAt"))
                             ],
                           ));
                     },
@@ -133,7 +140,7 @@ class _CreateRoutineState extends State<CreateRoutine> {
             Align(
                 alignment: Alignment.center,
                 child:
-                ElevatedButton(onPressed: () {}, child: const Text("Add")))
+                ElevatedButton(onPressed: () {}, child: const Text("Add Routine")))
           ]),
         ),
       ),
@@ -153,5 +160,20 @@ class _CreateRoutineState extends State<CreateRoutine> {
         "${selectedTime.hour}:${selectedTime.minute} ${selectedTime.period.name}";
       });
     }
+  }
+
+
+
+  //create category record
+  _addCategory(Isar isar) async {
+    final categories = isar.categorys;
+
+    final newCategory = Category()..name = _newCatController.text;
+
+    await isar.writeTxn((isar) async {
+      await categories.put(newCategory);
+    });
+
+    _newCatController.clear();
   }
 }
