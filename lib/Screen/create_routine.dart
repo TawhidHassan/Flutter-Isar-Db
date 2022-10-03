@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_isar_db/collecdtions/category.dart';
 import 'package:isar/isar.dart';
+
+import '../collecdtions/category.dart';
 
 class CreateRoutine extends StatefulWidget {
   final Isar isar;
@@ -11,8 +12,8 @@ class CreateRoutine extends StatefulWidget {
 }
 
 class _CreateRoutineState extends State<CreateRoutine> {
-  List<String> categories = ['work', 'school', 'home'];
-  String dropdownValue = 'work';
+  List<Category>? categories;
+  Category? dropdownValue;
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _timeController = TextEditingController();
   final TextEditingController _newCatController = TextEditingController();
@@ -27,6 +28,13 @@ class _CreateRoutineState extends State<CreateRoutine> {
   ];
   String dropdownDay = "monday";
   TimeOfDay selectedTime = TimeOfDay.now();
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _readCategory();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,11 +62,11 @@ class _CreateRoutineState extends State<CreateRoutine> {
                     value: dropdownValue,
                     icon: const Icon(Icons.keyboard_arrow_down),
                     items: categories
-                        .map<DropdownMenuItem<String>>((String nvalue) {
-                      return DropdownMenuItem<String>(
-                          value: nvalue, child: Text(nvalue));
+                        ?.map<DropdownMenuItem<Category>>((Category nvalue) {
+                      return DropdownMenuItem<Category>(
+                          value: nvalue, child: Text(nvalue.name));
                     }).toList(),
-                    onChanged: (String? newValue) {
+                    onChanged: (Category? newValue) {
                       setState(() {
                         dropdownValue = newValue!;
                       });
@@ -80,7 +88,7 @@ class _CreateRoutineState extends State<CreateRoutine> {
                                       _addCategory(widget.isar);
                                     }
                                   },
-                                  child: const Text("Add CAt"))
+                                  child: const Text("Add"))
                             ],
                           ));
                     },
@@ -140,7 +148,7 @@ class _CreateRoutineState extends State<CreateRoutine> {
             Align(
                 alignment: Alignment.center,
                 child:
-                ElevatedButton(onPressed: () {}, child: const Text("Add Routine")))
+                ElevatedButton(onPressed: () {}, child: const Text("Add")))
           ]),
         ),
       ),
@@ -162,9 +170,7 @@ class _CreateRoutineState extends State<CreateRoutine> {
     }
   }
 
-
-
-  //create category record
+//create category record
   _addCategory(Isar isar) async {
     final categories = isar.categorys;
 
@@ -175,5 +181,15 @@ class _CreateRoutineState extends State<CreateRoutine> {
     });
 
     _newCatController.clear();
+    _readCategory();
+  }
+
+  _readCategory() async {
+    final categoryCollection = widget.isar.categorys;
+    final getCategories = await categoryCollection.where().findAll();
+    setState(() {
+      dropdownValue = null;
+      categories = getCategories;
+    });
   }
 }
