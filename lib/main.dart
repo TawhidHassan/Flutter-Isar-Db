@@ -11,7 +11,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final dir = await getApplicationSupportDirectory();
   final isar = await Isar.open(
-      schemas: [RoutineSchema, CategorySchema], directory: dir.path, inspector: true,);
+      schemas: [RoutineSchema, CategorySchema], directory: dir.path);
   runApp(MyApp(isar: isar));
 }
 
@@ -42,8 +42,11 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   List<Routine>? routines;
-  bool searching = false;
   final TextEditingController _searchController = TextEditingController();
+  bool searching = false;
+  String feedback = "";
+  MaterialColor feedbackColor = Colors.blue;
+
   @override
   void initState() {
     // TODO: implement initState
@@ -68,7 +71,7 @@ class _MainPageState extends State<MainPage> {
               icon: const Icon(Icons.add))
         ],
       ),
-      body:  SingleChildScrollView(
+      body: SingleChildScrollView(
         child: Column(
           children: [
             Padding(
@@ -82,6 +85,14 @@ class _MainPageState extends State<MainPage> {
                       hintText: "Search routine",
                       hintStyle: TextStyle(fontStyle: FontStyle.italic))),
             ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(
+                feedback,
+                style: TextStyle(
+                    color: feedbackColor, fontStyle: FontStyle.italic),
+              ),
+            ),
             FutureBuilder<List<Widget>>(
                 future: _buildWidgets(),
                 builder: (context, snapshot) {
@@ -94,14 +105,24 @@ class _MainPageState extends State<MainPage> {
           ],
         ),
       ),
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: SizedBox(
+            height: 50,
+            child: ElevatedButton(
+                onPressed: () {
+                  clearAll();
+                },
+                child: const Text("Clear all"))),
+      ),
     );
   }
 
   Future<List<Widget>> _buildWidgets() async {
+    createWatcher();
     if (!searching) {
       await _readRoutines();
     }
-
 
     List<Widget> x = [];
 
@@ -156,6 +177,15 @@ class _MainPageState extends State<MainPage> {
     }
     return x;
   }
+
+  _readRoutines() async {
+    final routineCollection = widget.isar.routines;
+    final getRoutines = await routineCollection.where().findAll();
+    setState(() {
+      routines = getRoutines;
+    });
+  }
+
   searchRoutineByName(String searchName) async {
     searching = true;
     final routineCollection = widget.isar.routines;
@@ -165,11 +195,34 @@ class _MainPageState extends State<MainPage> {
       routines = searchResults;
     });
   }
-  _readRoutines() async {
+
+  clearAll() async {
     final routineCollection = widget.isar.routines;
     final getRoutines = await routineCollection.where().findAll();
-    setState(() {
-      routines = getRoutines;
+
+    await widget.isar.writeTxn((isar) async {
+      for (var routine in getRoutines) {
+        routineCollection.delete(routine.id);
+      }
+    });
+
+    setState(() {});
+  }
+
+  createWatcher() {
+    Query<Routine> getTasks = widget.isar.routines.where().build();
+
+    Stream<List<Routine>> queryChanged = getTasks.watch(initialReturn: true);
+    queryChanged.listen((routines) {
+      if (routines.length > 3) {
+        setState(() {
+          feedback = "You have more than 3 tasks to do";
+          feedbackColor = Colors.red;
+        });
+      } else {
+        feedback = "You are right on track";
+        feedbackColor = Colors.blue;
+      }
     });
   }
 }
